@@ -1,6 +1,6 @@
 <!-- _coverpage.md -->
 
-![logo](_media/icon.svg)
+<!--![logo](_media/icon.svg)-->
 
 # docsify <small>3.5</small>
 
@@ -11,4 +11,4 @@
 - 众多主题
 
 [GitHub](https://github.com/docsifyjs/docsify/)
-[Get Started](#docsify)
+[Get Started](#_332-授权网关模式)
