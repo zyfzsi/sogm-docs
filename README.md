@@ -1,4 +1,4 @@
-# 3.3.2 授权网关模式
+# 授权网关模接入
 
 ### 背景
 #### 个性化展示
@@ -22,18 +22,29 @@ SOG 可以由上海教育认证中心托管，提供云 SOG 服务，也可以�
 SOG 与 SOGM 的通讯过程，全部基于 SOG 的 Shibboleth SP 秘钥进行加密签名，从而确保通讯的安全可靠，SOGM 通过联盟 Metadata 内的 SP 公钥进行签名验证，确保仅联盟内的 SP 可获取数据。
 
 ### 申请使用授权网关
-请发送邮件至 its@cloud.sh.edu.cn 申请
+请发送邮件至 fancy@cloud.sh.edu.cn 申请
 
-### 调用示例
+格式如下
 
-授权网关仅提供 OAuth2 授权码模式的授权，以下假定 SOG 的域名为
-https://sog.example.org ，并以此为例提供调用示例。
+```
+应用名：xxx管理平台
+应用简介：xxxx管理平台，用于...
+应用回调地址：https://xxx.xxx.xxx/callback
+```
+
+审核通过后会协助开通sog-manager账户。后续均可以自行在授权网关管理平台上自行操作。
+
+### 授权网关api调用示例
+
+授权网关仅提供 OAuth2 授权码模式的授权，综管统一平台的SOG域名为
+https://i-sog.shec.edu.cn/ ，并以此为例提供调用示例。
 
 本章的调用示例使用 [Google OAuth2.0 Playground](https://developers.google.com/oauthplayground/) 
 
 #### 获取授权码
 ##### 请求方式
 `GET /oauth/v1/authorize`
+
 ##### 请求参数
 字段名|类型|是否必须|备注
 --|--|--|--
@@ -52,7 +63,7 @@ code|string|返回的授权码，有效期 60 秒
 Request
 ```
 HTTP/1.1 302 Found
-Location: https://sog.example.org/oauth/v1/authorize?scope=SEAC-Basic&redirect_uri=https%3A%2F%2Fdevelopers.google.com%2Foauthplayground&response_type=code&client_id=9ae61d477a4d9f61&access_type=offline
+Location: https://i-sog.shec.edu.cn/oauth/v1/authorize?scope=SEAC-Basic&redirect_uri=https%3A%2F%2Fdevelopers.google.com%2Foauthplayground&response_type=code&client_id=9ae61d477a4d9f61&access_type=offline
 ```
 Response
 ```
@@ -62,6 +73,9 @@ Host: developers.google.com
 #### 获取 token
 ##### 请求方式
 `POST /oauth/v1/token`
+
+获取token的时候是post请求，需要注意一下。
+
 ##### 请求参数
 字段名|类型|是否必须|备注
 --|--|--|--
@@ -159,7 +173,7 @@ Response
 ```
 HTTP/1.1 200 OK
 Content-length: 510
-Content-location: https://sog.example.org/oauth/v1/userinfo
+Content-location: https://i-sog.shec.edu.cn/oauth/v1/userinfo
 X-powered-by: PHP/7.4.5
 Server: nginx
 Connection: keep-alive
@@ -223,7 +237,7 @@ Response
 ```
 HTTP/1.1 200 OK
 Content-length: 139
-Content-location: https://sog.example.org/oauth/legacy/userinfo
+Content-location: https://i-sog.shec.edu.cn/oauth/legacy/userinfo
 X-powered-by: PHP/7.4.5
 Server: nginx
 Connection: keep-alive
@@ -244,5 +258,347 @@ Content-type: text/html; charset=UTF-8
 #### 注销
 直接在授权网关的 shibboleth 接口上注销即可
 ```
-https://sog.example.org/Shibboleth.sso/Logout
+https://i-sog.shec.edu.cn/Shibboleth.sso/Logout
 ```
+
+### 授权网关同步api调用示例
+
+#### 用户同步
+
+处于对系统接入的考虑，提供用户同步的api，用户在获取到sog管理平台的账号后，可以在右上角的管理中生成对应的永久token并填入调用机器的公网ip（需要使用教科网的ip地址获取 https://ip.ecnu.edu.cn/），以下示例中的  ‘yourtoken’ 替换为生成的token即可。另外，用户同步使用的api域名与oauth调用的不同，为 https://sog-manager.cloud.sh.edu.cn/ 需要注意一下。
+
+##### 添加用户
+
+###### 请求方式
+
+`POST /api/v1/user/:client_id`
+
+###### 请求参数
+
+| 字段名       | 类型   | 是否必须 | 备注                                    |
+| ------------ | ------ | -------- | --------------------------------------- |
+| access_token | string | 是       | 请求的 access_token，只能是 Bearer 方式 |
+| client_id    | string | 是       | 应用的clientid，直接拼在url上。         |
+
+###### 请求体（json）
+
+需要以`[{"eduPersonPrincipalName":"20150073@ecnu.edu.cn, "mobile": "17621190203"},{"eduPersonPrincipalName":"xxzxcsyh9@shec.edu.cn", "mobile": "15800434801"}]`这样的形式传递，其中可传递的字段如下表所示，eduPersonPrincipalName， mobile两个字段为必传，其余的选填。
+
+需要注意一下，eduPersonPrincipalName中必须遵守用户名@域名的方式，不然无法通过验证，域名可以通过[获取idp列表](#获取idp列表)接口获取。
+
+| 字段                            | 类型   | 是否必须 | 说明                                                         |
+| ------------------------------- | ------ | -------- | ------------------------------------------------------------ |
+| shEduPersonUserId               | string | 否       | 用户在子域的标识，通常等于用户名                             |
+| shEduPersonDateOfBirth          | string | 否       | 生日                                                         |
+| shEduPersonGender               | string | 否       | 性别                                                         |
+| shEduPersonHomeOrganization     | string | 否       | 子域域名                                                     |
+| hEduPersonHomeOrganizationName  | string | 否       | 子域名称                                                     |
+| shEduPersonHomeOrganizationType | string | 否       | 子域类别                                                     |
+| shEduPersonDepartment           | string | 否       | 对于高校学生，院系。对于高校教职工，部门                     |
+| shEduPersonMajor                | string | 否       | 对于高校学生，专业                                           |
+| shEduPersonMatriculationDate    | string | 否       | 入学日期，到年                                               |
+| shEduPersionStageOfStudy        | string | 否       | 学段                                                         |
+| shEduPersonGrade                | string | 否       | 对普教，年级                                                 |
+| shEduPersonClass                | string | 否       | 对普教，班级                                                 |
+| shEduPersonSchool               | string | 否       | 对普教，学校                                                 |
+| shEduId                         | string | 否       | eduID                                                        |
+| eduPersonPrincipalName          | string | 是       | 用户名@域名，例如 200000@ecnu.edu.cn                         |
+| eduPersonAffiliation            | string | 否       | 身份类别，取值为：faculty, student, staff, alum, member, affiliate, employee |
+| eduPersonScopeAffiliation       | string | 否       | eduPersonAffiliation+@域名，例如 faculty@ecnu.edu.cn         |
+| mail                            | string | 否       | 邮箱                                                         |
+| cn                              | string | 否       | 姓名                                                         |
+| mobile                          | string | 是       | 手机号                                                       |
+
+###### 返回参数
+
+| 字段名 | 类型   | 是否必须 | 备注                                                         |
+| ------ | ------ | -------- | ------------------------------------------------------------ |
+| msg    | string | 是       | 请求的 access_token，只能是 Bearer 方式                      |
+| data   | List   | 否       | 如果发送的信息中包含重复的用户，会将所有重复的用户返回。（此次操作所有的用户都不会成功插入） |
+
+###### 
+
+###### 请求示例
+
+```bash
+$ curl -X POST -H "Authorization: Bearer yourtoken" -H "Content-Type: application/json" -d "[{\"eduPersonPrincipalName\":\"20150073@ecnu.edu.cn\"},{\"eduPersonPrincipalName\":\"xxzxcsyh9@shec.edu.cn\"}]" https://sog-manager.cloud.sh.edu.cn/api/v1/user/a60ed07a60b57f60
+
+success:
+{"msg": "ok"}
+fail:
+{"msg": "fial", "data": ["20150073@ecnu.edu.cn", "xxzxcsyh9@shec.edu.cn"]}
+```
+
+##### 修改用户
+
+###### 请求方式
+
+`PUT /api/v1/user/:client_id`
+
+###### 请求参数
+
+| 字段名       | 类型   | 是否必须 | 备注                                    |
+| ------------ | ------ | -------- | --------------------------------------- |
+| access_token | string | 是       | 请求的 access_token，只能是 Bearer 方式 |
+| client_id    | string | 是       | 应用的clientid，直接拼在url上。         |
+
+###### 请求体（json）
+
+eduPersonPrincipalName必传，用来作为主键判断用户身份。
+
+| 字段                            | 类型   | 是否必须 | 说明                                                         |
+| ------------------------------- | ------ | -------- | ------------------------------------------------------------ |
+| shEduPersonUserId               | string | 否       | 用户在子域的标识，通常等于用户名                             |
+| shEduPersonDateOfBirth          | string | 否       | 生日                                                         |
+| shEduPersonGender               | string | 否       | 性别                                                         |
+| shEduPersonHomeOrganization     | string | 否       | 子域域名                                                     |
+| hEduPersonHomeOrganizationName  | string | 否       | 子域名称                                                     |
+| shEduPersonHomeOrganizationType | string | 否       | 子域类别                                                     |
+| shEduPersonDepartment           | string | 否       | 对于高校学生，院系。对于高校教职工，部门                     |
+| shEduPersonMajor                | string | 否       | 对于高校学生，专业                                           |
+| shEduPersonMatriculationDate    | string | 否       | 入学日期，到年                                               |
+| shEduPersionStageOfStudy        | string | 否       | 学段                                                         |
+| shEduPersonGrade                | string | 否       | 对普教，年级                                                 |
+| shEduPersonClass                | string | 否       | 对普教，班级                                                 |
+| shEduPersonSchool               | string | 否       | 对普教，学校                                                 |
+| shEduId                         | string | 否       | eduID                                                        |
+| eduPersonPrincipalName          | string | 是       | 用户名@域名，例如 200000@ecnu.edu.cn                         |
+| eduPersonAffiliation            | string | 否       | 身份类别，取值为：faculty, student, staff, alum, member, affiliate, employee |
+| eduPersonScopeAffiliation       | string | 否       | eduPersonAffiliation+@域名，例如 faculty@ecnu.edu.cn         |
+| mail                            | string | 否       | 邮箱                                                         |
+| cn                              | string | 否       | 姓名                                                         |
+| mobile                          | string | 否       | 手机号                                                       |
+
+###### 返回参数
+
+| 字段名 | 类型   | 是否必须 | 备注             |
+| ------ | ------ | -------- | ---------------- |
+| msg    | string | 是       | 返回的操作信息。 |
+
+###### 请求示例
+
+```bash
+$ curl -X PUT -H "Authorization: Bearer yourtoken" -H "Content-Type: application/json" -d "[{\"eduPersonPrincipalName\":\"20150073@ecnu.edu.cn\",\"eduPersonScopeAffiliation\":\"faculty@ecnu.edu.cn\",\"eduPersonAffiliation\":\"faculty\",\"cn\":\"冯骐\",\"mail\":\"qfeng@admin.ecnu.edu.cn\",\"mobile\":\"18918799537\",\"shEduPersonUserId\":\"20150073\",\"shEduPersonDateOfBirth\":\"19890619\",\"shEduPersonGender\":\"1\",\"shEduPersonHomeOrganization\":\"ecnu.edu.cn\",\"shEduPersonHomeOrganizationName\":\"华东师范大学\",\"shEduPersonHomeOrganizationType\":\"university\",\"shEduPersonDepartment\":\"信息化治理办公室\",\"shEduPersonMajor\":\"计算机科学与技术系\",\"shEduPersonMatriculationDate\":\"20070901\",\"shEduPersionStageOfStudy\":\"大学\",\"shEduPersonGrade\":\"初三\",\"shEduPersonClass\":\"四班\",\"shEduPersonSchool\":\"文来中学\",\"shEduId\":\"f7668e90-440b-5fe2-aff7-bf7e4d9ef10c\"}]" https://sog-manager.cloud.sh.edu.cn/api/v1/user/a60ed07a60b57f60
+
+{"msg": "ok"}
+```
+
+##### 删除用户
+
+###### 请求方式
+
+`DELETE /api/v1/user/:client_id`
+
+###### 请求参数
+
+| 字段名       | 类型   | 是否必须 | 备注                                    |
+| ------------ | ------ | -------- | --------------------------------------- |
+| access_token | string | 是       | 请求的 access_token，只能是 Bearer 方式 |
+| client_id    | string | 是       | 应用的clientid，直接拼在url上。         |
+
+###### 请求体（json）
+
+| 字段名                 | 类型   | 是否必须 | 备注                                   |
+| ---------------------- | ------ | -------- | -------------------------------------- |
+| eduPersonPrincipalName | string | 是       | 用户名@域名，例如 200000@ecnu.edu.cn。 |
+
+###### 请求示例
+
+```bash
+$ curl -X DELETE -H "Authorization: Bearer yourtoken" -H "Content-Type: application/json" -d "[{\"eduPersonPrincipalName\":\"20150073@ecnu.edu.cn\"},{\"eduPersonPrincipalName\":\"xxzxcsyh9@shec.edu.cn\"}]" https://sog-manager.cloud.sh.edu.cn/api/v1/user/a60ed07a60b57f60
+
+{"msg": "ok"}
+```
+
+##### 获取用户列表
+
+###### 请求方式
+
+`GET /api/v1/user/:client_id?page=page_num&per_page=per_pag_num`
+
+###### 请求参数
+
+| 字段名       | 类型    | 是否必须 | 备注                                    |
+| ------------ | ------- | -------- | --------------------------------------- |
+| access_token | string  | 是       | 请求的 access_token，只能是 Bearer 方式 |
+| client_id    | string  | 是       | 应用的clientid，直接拼在url上。         |
+| page         | integer | 是       | 页码                                    |
+| per_page     | integer | 是       | 每页返回多少数据                        |
+
+请求会根据提供的页码和每页的数据量自动返回对应的数据集合。
+
+###### 返回参数
+
+| 字段                            | 类型   | 说明                                                         |
+| ------------------------------- | ------ | ------------------------------------------------------------ |
+| shEduPersonUserId               | string | 用户在子域的标识，通常等于用户名                             |
+| shEduPersonDateOfBirth          | string | 生日                                                         |
+| shEduPersonGender               | string | 性别                                                         |
+| shEduPersonHomeOrganization     | string | 子域域名                                                     |
+| hEduPersonHomeOrganizationName  | string | 子域名称                                                     |
+| shEduPersonHomeOrganizationType | string | 子域类别                                                     |
+| shEduPersonDepartment           | string | 对于高校学生，院系。对于高校教职工，部门                     |
+| shEduPersonMajor                | string | 对于高校学生，专业                                           |
+| shEduPersonMatriculationDate    | string | 入学日期，到年                                               |
+| shEduPersionStageOfStudy        | string | 学段                                                         |
+| shEduPersonGrade                | string | 对普教，年级                                                 |
+| shEduPersonClass                | string | 对普教，班级                                                 |
+| shEduPersonSchool               | string | 对普教，学校                                                 |
+| shEduId                         | string | eduID                                                        |
+| eduPersonPrincipalName          | string | 用户名@域名，例如 200000@ecnu.edu.cn                         |
+| eduPersonAffiliation            | string | 身份类别，取值为：faculty, student, staff, alum, member, affiliate, employee |
+| eduPersonScopeAffiliation       | string | eduPersonAffiliation+@域名，例如 faculty@ecnu.edu.cn         |
+| mail                            | string | 邮箱                                                         |
+| cn                              | string | 姓名                                                         |
+| mobile                          | string | 手机号                                                       |
+
+这里 eduPersonPrincipalName 是必然返回的字段，其他都可能为空
+
+###### 请求示例
+
+```bash
+$ curl -H "Authorization: Bearer yourtoken" https://sog-manager.cloud.sh.edu.cn/api/v1/user/a60ed07a60b57f60?page=2&per_page=20
+
+{
+    "msg": "ok",
+    "data": [
+        {
+            "eduPersonPrincipalName": "dsw@current",
+            "eduPersonScopeAffiliation": null,
+            "eduPersonAffiliation": null,
+            "cn": "同济学士",
+            "id": 156,
+            "mail": "131111111@163.com",
+            "mobile": "13111111",
+            "shEduPersonUserId": "dsw",
+            "shEduPersonDateOfBirth": null,
+            "shEduPersonGender": null,
+            "shEduPersonHomeOrganization": "current",
+            "shEduPersonHomeOrganizationName": null,
+            "shEduPersonHomeOrganizationType": null,
+            "shEduPersonDepartment": null,
+            "shEduPersonMajor": null,
+            "shEduPersonMatriculationDate": null,
+            "shEduPersionStageOfStudy": null,
+            "shEduPersonGrade": null,
+            "shEduPersonClass": null,
+            "shEduPersonSchool": null,
+            "shEduPersonId": null
+        },
+        {
+            "eduPersonPrincipalName": "20150073@ecnu.edu.cn",
+            "eduPersonScopeAffiliation": null,
+            "eduPersonAffiliation": null,
+            "cn": null,
+            "id": 161,
+            "mail": null,
+            "mobile": "17621190203",
+            "shEduPersonUserId": null,
+            "shEduPersonDateOfBirth": null,
+            "shEduPersonGender": null,
+            "shEduPersonHomeOrganization": null,
+            "shEduPersonHomeOrganizationName": null,
+            "shEduPersonHomeOrganizationType": null,
+            "shEduPersonDepartment": null,
+            "shEduPersonMajor": null,
+            "shEduPersonMatriculationDate": null,
+            "shEduPersionStageOfStudy": null,
+            "shEduPersonGrade": null,
+            "shEduPersonClass": null,
+            "shEduPersonSchool": null,
+            "shEduPersonId": null
+        }
+    ]
+}
+```
+
+
+
+##### 获取用户拥有的应用权限
+
+###### 请求方式
+
+`GET /api/v1/userApplication/:eduPersonPrincipalName`
+
+此接口为sog管理员使用，应用无权限也无需调用。
+
+###### 请求参数
+
+| 字段名                 | 类型   | 是否必须 | 备注                                    |
+| ---------------------- | ------ | -------- | --------------------------------------- |
+| access_token           | string | 是       | 请求的 access_token，只能是 Bearer 方式 |
+| eduPersonPrincipalName | string | 是       | 应用的clientid，直接拼在url上。         |
+
+###### 请求示例
+
+```bash
+$ curl -X GET -H "Authorization: Bearer yourtoken" -H "Content-Type: application/json" -d https://sog-manager.cloud.sh.edu.cn/api/v1/userApplication/20150073@ecnu.edu.cn
+
+{
+    "msg": "ok",
+    "data": [
+        "4202ebfa344af689",
+        "98a12300d82484fb",
+        "d368c3bc170b3b07",
+        "4878a10c9c3bae36",
+        "bed97dc9bc3ff5f2",
+        "4d540423c4121cd5"
+    ]
+}
+```
+
+#####  
+
+##### 获取idp列表
+
+###### 请求方式
+
+`GET /api/v1/idp`
+
+无需附带token，此为开放式接口。
+
+###### 返回参数
+
+| 字段名       | 类型   | 是否必须 | 备注                                                         |
+| ------------ | ------ | -------- | ------------------------------------------------------------ |
+| entityID     | string | 是       | idp的entityID                      |
+| DisplayNames | string | 是       | idp的中文名DisplayNames             |
+| type         | string | 否       | idp的分类                                                             |
+| domainName   | string | 是       | idp的域名（eduPersonPrincipalName使用的就是此字段）                                                             |
+
+###### 
+
+###### 请求示例
+
+```bash
+$ curl -X GET -H "Content-Type: application/json" -d https://sog-manager.cloud.sh.edu.cn/api/v1/idp
+
+{
+    "msg": "ok",
+    "data": [
+        {
+            "entityID": "https://idp2.tongji.edu.cn/idp/shibboleth",
+            "DisplayNames": "同济大学",
+            "type": null,
+            "domainName": "tongji.edu.cn"
+        },
+        {
+            "entityID": "https://idp.ecust.edu.cn/idp/shibboleth",
+            "DisplayNames": "华东理工大学",
+            "type": null,
+            "domainName": "ecust.edu.cn"
+        },
+        ...
+        ...
+        ...
+        {
+            "entityID": "https://idp-shzhzyxx1.cloud.sh.edu.cn/idp/shibboleth",
+            "DisplayNames": "中华职业学校",
+            "type": null,
+            "domainName": "cloud.sh.edu.cn"
+        }
+    ]
+}
+```
+
+#####  
