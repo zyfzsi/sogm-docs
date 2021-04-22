@@ -265,7 +265,7 @@ https://i-sog.shec.edu.cn/Shibboleth.sso/Logout
 
 #### 用户同步
 
-处于对系统接入的考虑，提供用户同步的api，用户在获取到sog管理平台的账号后，可以在右上角的管理中生成对应的永久token并填入调用机器的公网ip（需要使用教科网的ip地址获取 https://ip.ecnu.edu.cn/），以下示例中的  ‘yourtoken’ 替换为生成的token即可。另外，用户同步使用的api域名与oauth调用的不同，为 https://sog-manager.cloud.sh.edu.cn/ 需要注意一下。
+处于对系统接入的考虑，提供用户同步的api，用户在获取到sog管理平台的账号后，可以在右上角的管理中生成对应的永久token并填入调用机器的公网ip（需要使用教科网的ip地址获取 https://ip.ecnu.edu.cn/ ），以下示例中的  ‘yourtoken’ 替换为生成的token即可。另外，用户同步使用的api域名与oauth调用的不同，为 https://sog-manager.cloud.sh.edu.cn/ 需要注意一下。
 
 ##### 添加用户
 
