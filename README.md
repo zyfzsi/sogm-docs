@@ -22,7 +22,7 @@ SOG 可以由上海教育认证中心托管，提供云 SOG 服务，也可以�
 SOG 与 SOGM 的通讯过程，全部基于 SOG 的 Shibboleth SP 秘钥进行加密签名，从而确保通讯的安全可靠，SOGM 通过联盟 Metadata 内的 SP 公钥进行签名验证，确保仅联盟内的 SP 可获取数据。
 
 ### 申请使用授权网关
-请发送邮件至 fancy@cloud.sh.edu.cn 申请
+请发送邮件至 fancy@cloud.sh.edu.cn ,抄送dwh@shec.edu.cn,kelx@shec.edu.cn 申请
 
 格式如下
 
@@ -30,6 +30,12 @@ SOG 与 SOGM 的通讯过程，全部基于 SOG 的 Shibboleth SP 秘钥进行�
 应用名：xxx管理平台
 应用简介：xxxx管理平台，用于...
 应用回调地址：https://xxx.xxx.xxx/callback
+甲方单位：
+甲方单位联系人：
+甲方单位联系人联系方式：
+开发商单位：
+开发商联系人：
+开发商联系人联系方式：
 ```
 
 审核通过后会协助开通sog-manager账户。后续均可以自行在授权网关管理平台上自行操作。
